@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glibc ROP Gadget Compare</title>
+    <style>
+        /* General body styles for dark mode */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212; /* Dark background */
+            color: #e0e0e0; /* Light text color */
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #ffffff; /* White color for header */
+        }
+
+        /* Styling for the dropdown and input elements */
+        select, input, button {
+            background-color: #333333; /* Dark background for inputs */
+            color: #e0e0e0; /* Light text color */
+            border: 1px solid #555555; /* Lighter border */
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+
+        select:focus, input:focus, button:focus {
+            outline: none;
+            border-color: #888888; /* Lighter border when focused */
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #6200ea; /* A nice purple for button */
+            border-color: #6200ea;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #3700b3; /* Darker purple for button hover */
+        }
+
+        /* Results area styling */
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #444444; /* Slightly lighter border */
+            background-color: #1e1e1e; /* Darker background for results */
+            border-radius: 4px;
+        }
+
+        /* Results text styling */
+        #results pre {
+            margin: 0;
+            white-space: pre-wrap;
+            color: #e0e0e0; /* Light text for results */
+        }
+
+        /* Add some spacing between elements */
+        label {
+            margin-right: 10px;
+        }
+
+        /* Adjust spacing for input elements */
+        input, select, button {
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Compare ROP Gadgets Across Versions of Glibc!</h1>
+
+    <!-- Dropdown to select the text file -->
+    <label for="fileSelect">Select a glibc version:</label>
+    <select id="fileSelect">
+        <option value="libc.so.6-2.36-i386.txt">2.36 i386</option>
+        <option value="libc-2.31.so-i386.txt">2.31 i386</option>
+    </select>
+
+    <br><br>
+
+    <!-- Text box to input regex -->
+    <label for="regexInput">Enter a search pattern:</label>
+    <input type="text" id="regexInput" placeholder="Enter your regex here">
+
+    <br><br>
+
+    <!-- Button to trigger the search -->
+    <button onclick="search()">Search</button>
+
+    <!-- Display search results here -->
+    <div id="results"></div>
+
+    <script>
+        function search() {
+            const fileSelect = document.getElementById('fileSelect');
+            const regexInput = document.getElementById('regexInput');
+            const resultsDiv = document.getElementById('results');
+
+            const fileName = fileSelect.value;
+            const regexStr = regexInput.value;
+
+            // Reset the results div before displaying new results
+            resultsDiv.innerHTML = "";
+
+            // Validate regex
+            try {
+                const regex = new RegExp(regexStr, 'g');
+                
+                // Fetch the selected text file
+                fetch(fileName)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('File not found or unable to fetch.');
+                        }
+                        return response.text();
+                    })
+                    .then(fileContent => {
+                        // Split content into lines
+                        const lines = fileContent.split('\n');
+                        let matches = [];
+
+                        // Iterate over lines and check for matches
+                        lines.forEach(line => {
+                            if (regex.test(line)) {
+                                matches.push(line);
+                            }
+                        });
+
+                        // Display results
+                        if (matches.length > 0) {
+                            resultsDiv.innerHTML = "<h3> </h3><pre>" + matches.join("\n") + "</pre>";
+                        } else {
+                            resultsDiv.innerHTML = "<p>No matches found.</p>";
+                        }
+                    })
+                    .catch(error => {
+                        resultsDiv.innerHTML = "<p>Error: " + error.message + "</p>";
+                    });
+            } catch (e) {
+                resultsDiv.innerHTML = "<p>Invalid regex pattern: " + e.message + "</p>";
+            }
+        }
+    </script>
+
+</body>
+</html>
+
