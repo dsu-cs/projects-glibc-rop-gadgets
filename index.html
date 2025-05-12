@@ -70,23 +70,75 @@
             margin-bottom: 15px;
         }
 
+        /* Modal styles for the popup */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #6200ea;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: white;
+        }
     </style>
 </head>
 <body>
 
     <h1>Compare ROP Gadgets Across Versions of Glibc!</h1>
+<div id="versions-div">
+<h3>Glibc Version:</h3>
+<label><input type="radio" name="version" value="2.4"> 2.4</label>
+<label><input type="radio" name="version" value="2.35"> 2.35</label>
+<label><input type="radio" name="version" value="2.39"> 2.39</label>
+<label><input type="radio" name="version" value="2.41" checked> 2.41</label>
+</div>
+<div id="arch-div">
+<h3>Architecture:</h3>
+<label><input type="radio" name="arch" value="amd64" checked> amd64</label>
+<label><input type="radio" name="arch" value="i386"> i386</label>
+</div>
 
-    <!-- Dropdown to select the text file -->
-    <label for="fileSelect">Select a glibc version:</label>
-    <select id="fileSelect">
-        <option value="libc.so.6-2.4-i386-1ubuntu3.1.txt">2.4 i386 32-bit</option>
-        <option value="libc.so.6-2.4-amd64-1ubuntu3.1.txt">2.4 amd64 64-bit</option>
-    </select>
 
-    <br><br>
 
-    <!-- Text box to input regex -->
-    <label for="regexInput">Enter a search pattern:</label>
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Version selection radio buttons -->
+    <div>
+        
     <input type="text" id="regexInput" placeholder="Enter your regex here">
 
     <br><br>
@@ -97,14 +149,47 @@
     <!-- Display search results here -->
     <div id="results"></div>
 
+    <!-- Modal popup for alerts -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
     <script>
+        function showModal(message) {
+            const modal = document.getElementById('alertModal');
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.textContent = message;
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('alertModal');
+            modal.style.display = 'none';
+        }
+
         function search() {
-            const fileSelect = document.getElementById('fileSelect');
             const regexInput = document.getElementById('regexInput');
             const resultsDiv = document.getElementById('results');
 
-            const fileName = fileSelect.value;
+            // Get selected version and architecture
+            const selectedVersion = document.querySelector('input[name="version"]:checked');
+            const selectedArch = document.querySelector('input[name="arch"]:checked');
+
+            // Validate selections
+            if (!selectedVersion || !selectedArch) {
+                showModal('Please select both a Glibc version and an architecture before searching.');
+                return;
+            }
+
+            const version = selectedVersion.value;
+            const arch = selectedArch.value;
             const regexStr = regexInput.value;
+
+            // Construct filename based on selections
+            const fileName = `${arch}-${version}.txt`;
 
             // Reset the results div before displaying new results
             resultsDiv.innerHTML = "";
@@ -147,8 +232,15 @@
                 resultsDiv.innerHTML = "<p>Invalid regex pattern: " + e.message + "</p>";
             }
         }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('alertModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
     </script>
 
 </body>
 </html>
-
