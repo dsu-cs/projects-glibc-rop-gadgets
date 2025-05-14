@@ -1,97 +1,84 @@
-#!/usr/bin/env python3
 import os
 import re
 
-def update_index_html():
-    # Find all arch-version.txt files in current directory
-    files = [f for f in os.listdir('.') if re.match(r'^[a-zA-Z0-9]+-\d+\.\d+\.txt$', f)]
-    
-    if not files:
-        print("No arch-version.txt files found in current directory")
-        return
-    
-    # Parse versions and architectures
-    versions = set()
+#Function to determine what architechtures and versions are present based on text files
+#present in local directory
+def extract_options_from_files():
     architectures = set()
+    versions = set()
     
-    for file in files:
-        # Remove .txt extension and split
-        base = file[:-4]
-        arch, version = base.split('-', 1)
-        architectures.add(arch)
-        versions.add(version)
+    # RegEx Pattern to match "[architecture]-[version].txt"
+    pattern = re.compile(r'^([a-zA-Z0-9]+)-([0-9.]+)\.txt$')
     
-    # Sort versions numerically and architectures alphabetically
-    versions = sorted(versions, key=lambda v: [int(num) for num in v.split('.')])
-    architectures = sorted(architectures)
+    #Search local directory for files matching RegEx pattern
+    #Note appropriate architectures and versions based on what is found
+    for filename in os.listdir('.'):
+        match = pattern.match(filename)
+        if match:
+            arch, version = match.groups()
+            architectures.add(arch)
+            versions.add(version)
     
-    # Read the original index.html
-    with open('index.html', 'r') as f:
-        content = f.read()
-    
-    # Generate versions radio buttons HTML
-    versions_html = []
-    versions_html.append('<div id="versions-div">')
-    versions_html.append('<h3>Glibc Version:</h3>')
-    for version in versions:
-        checked = ' checked' if version == max(versions) else ''
-        versions_html.append(f'<label><input type="radio" name="version" value="{version}"{checked}> {version}</label>')
-    versions_html.append('</div>')
-    versions_html = '\n'.join(versions_html)
-    
-    # Generate architectures radio buttons HTML
-    arch_html = []
-    arch_html.append('<div id="arch-div">')
-    arch_html.append('<h3>Architecture:</h3>')
-    for arch in architectures:
-        checked = ' checked' if arch == architectures[0] else ''
-        arch_html.append(f'<label><input type="radio" name="arch" value="{arch}"{checked}> {arch}</label>')
-    arch_html.append('</div>')
-    arch_html = '\n'.join(arch_html)
-    
-    # Remove ALL existing versions and arch sections
-    # First remove the entire versions section
-    content = re.sub(
-        r'<div id="versions-div">.*?</div>',
-        '',
-        content,
-        flags=re.DOTALL
-    )
-    # Then remove the entire arch section
-    content = re.sub(
-        r'<div id="arch-div">.*?</div>',
-        '',
-        content,
-        flags=re.DOTALL
-    )
-    
-    # Remove any loose h3 labels that might remain
-    content = re.sub(
-        r'<h3>Glibc Version:</h3>',
-        '',
-        content
-    )
-    content = re.sub(
-        r'<h3>Architecture:</h3>',
-        '',
-        content
-    )
-    
-    # Find the position to insert the radio buttons (after the h1 tag)
-    h1_end = content.find('</h1>')
-    if h1_end == -1:
-        print("Couldn't find </h1> tag in index.html")
-        return
-    
-    # Insert new divs after the h1 tag
-    h1_end += len('</h1>')
-    content = content[:h1_end] + '\n' + versions_html + '\n' + arch_html + '\n' + content[h1_end:]
-    
-    # Write the updated file
-    with open('index.html', 'w') as f:
-        f.write(content)
-    
-    print(f"Updated index.html with {len(versions)} versions and {len(architectures)} architectures")
+    #Return architectures and versions that were found in files in local directory
+    return sorted(architectures), sorted(versions)
 
-if __name__ == '__main__':
-    update_index_html()
+#Function to generate new html for version/architectures to display in index.html 
+#based on source text files found in local directory
+def generate_html(architectures, versions):
+    html_template = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROP Gadget Autocomplete</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ROP Gadget Autocomplete</h1>
+        
+        <div class="options-container">
+            <div class="option-group">
+                <h3>Glibc Version</h3>
+                {"".join(f'<label><input type="radio" name="version" value="{version}"> {version}</label><br>' for version in versions)}
+            </div>
+            
+            <div class="option-group">
+                <h3>Architecture</h3>
+                {"".join(f'<label><input type="radio" name="arch" value="{arch}"> {arch}</label><br>' for arch in architectures)}
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="autocomplete-input" placeholder="Start typing..." autocomplete="off">
+            <ul id="autocomplete-results"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>'''
+    
+    with open('index.html', 'w') as f:
+        f.write(html_template)
+
+def main():
+    #Get architectures and versions from source filenames present in local directory
+    architectures, versions = extract_options_from_files()
+    
+    if not architectures or not versions:
+        print("No valid architecture-version files found in directory.")
+        print("Expected files in format: [architecture]-[version].txt")
+        return
+
+    #If architectures and/or versions are found, generate new index.html
+    
+    print(f"Found architectures: {', '.join(architectures)}")
+    print(f"Found versions: {', '.join(versions)}")
+    
+    # Generate the HTML file with the found options
+    generate_html(architectures, versions)
+    print("index.html has been updated with available options.")
+
+if __name__ == "__main__":
+    main()
