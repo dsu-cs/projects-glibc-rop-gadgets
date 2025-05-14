@@ -1,4 +1,4 @@
-# Glibc ROP Gadget Autocomplete -- Tries and AVL Trees -- FINAL PROJECT
+# Glibc ROP Gadget Autocomplete
 
 This repository contains the source code for a web app designed to mitigate the difficulty that those working in software exploitation face when attempting to build ROP chains in software running on remote machines that are using different versions of glibc than what is present/compiled on the exploiter's host machine. The web app provides a quick and straightforward way to search for ROP gadgets within different versions of glibc compiled for different architectures. The app features Trie based autocomplete features, as well as AVL Tree based sorting of ROP gadget suggestions. 
 
