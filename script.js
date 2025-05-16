@@ -82,6 +82,41 @@ class Trie {
         //return this._findInstructionsFromNode(currentNode, prefix);
     }
 
+    // Alternative method to search using regular expressions
+    searchRegex(pattern) {
+        // If the pattern is empty, return empty array
+        if (!pattern) return [];
+        
+        let regex;
+        try {
+            // Create javascript regex object from pattern (case insensitive)
+	    // https://www.w3schools.com/jsref/jsref_obj_regexp.asp
+            regex = new RegExp(pattern, 'i');
+        } catch (e) {
+            // If invalid regex, return empty array
+            console.error("Invalid regex:", e);
+            return [];
+        }
+        
+        // Get all instructions from the trie
+        const allInstructions = this._findInstructionsFromNode(this.root, '');
+        
+        // Filter instructions that match the regex
+        const matches = allInstructions.filter(item => regex.test(item.instruction));
+
+	// Sort matches by instruction length using AVL tree
+	// Create a new AVL tree that will be used to sort matches by length
+	const avlTree = new AVLTree();
+
+	//Add all matches to AVL tree (thus sorting them by length)
+	matches.forEach(match => avlTree.insert(match));
+
+	//Return an in-order traversal of the full AVL match tree
+	//This should now return a list of rop-gadgets in order of length
+	return avlTree.inOrderTraversal();
+
+    }
+
     // This is a somewhat specialized recursive function/method that may not be necessary
     // in many tries, but was required for the specific application that this trie was
     // to be used for. It starts at a given node (and the prefix which leads to it), 
@@ -402,6 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    /*
     // Handle input events for autocomplete
     const handleInputChange = function () {
         // Check if both version and architecture are selected
@@ -439,6 +475,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
 	//Get search matches from trie data structure and display results
         const matches = trie.search(query);
+        displayResults(matches);
+    };
+    */
+
+    // Modified handleInputChange function
+    const handleInputChange = function () {
+        // Check if both version and architecture are selected
+        const versionSelected = getSelectedVersion();
+        const archSelected = getSelectedArch();
+        
+	//If user has not selected both a version and an architechture, then show an error message
+        if (!versionSelected || !archSelected) {
+            showNotification('Please select both a glibc version and architecture before searching', true);
+            inputField.value = '';
+            resultsList.style.display = 'none';
+            resultsList.innerHTML = '';
+            return;
+        }
+
+        if (!currentDataLoaded) {
+            resultsList.style.display = 'none';
+            resultsList.innerHTML = '';
+            return;
+        }
+
+	//Check for input field changes
+        const query = inputField.value.trim();
+        console.log("Input changed:", query);
+
+	//If all input is cleared, then remove results box
+        if (query.length === 0) {
+            resultsList.style.display = 'none';
+            resultsList.innerHTML = '';
+            return;
+        }
+
+        // Determine if the query is a regex (contains special regex chars)
+        const isRegex = /[\\^$*+?.()|[\]{}]/.test(query);
+
+	// list of matching ROP gadgets
+        let matches;
+
+	//Determine if we need to use 'regex search' or normal 'prefix search'
+        if (isRegex) {
+            try {
+                matches = trie.searchRegex(query);
+                // Show a hint that regex search is being used
+                if (query.length > 0 && matches.length > 0) {
+                    showNotification('Searching by RegEx', false);
+                }
+            } catch (e) {
+                matches = [];
+                showNotification('Invalid regular expression', true);
+            }
+        } else {
+            // Normal prefix search
+	    showNotification('Searching by Prefix', false);
+            matches = trie.search(query);
+        }
+
         displayResults(matches);
     };
 
