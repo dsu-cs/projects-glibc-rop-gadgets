@@ -16,3 +16,5 @@ source ../venv/bin/activate
 pip install -r requirements.txt
 
 # add any other commandline tools or dependencies that need to be added here
+
+# you should install zstd
