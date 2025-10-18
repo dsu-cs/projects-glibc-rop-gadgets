@@ -1,5 +1,6 @@
 #Make sure Beautiful Soup intalled in WSL terminal
     #pip install beautifulsoup4 requests
+# Attempt 2
 
 from bs4 import BeautifulSoup
 import requests
