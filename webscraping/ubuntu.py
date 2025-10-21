@@ -154,11 +154,11 @@ for link in soup.find_all("a", href=True):
         if os.path.isfile(data_tar_zst_path):
             subprocess.run(['zstd', '-d', data_tar_zst_path, '-o', data_tar_path], check=True)
             subprocess.run(['tar', '-xf', data_tar_path, '-C', dir_path], check=True)
-            for root, dirs, files in os.walk(os.path.join(dir_path, "usr", "lib")):
+            for root, dirs, files in os.walk(os.path.join(dir_path)):
                 if libc in files:
                     libc_path = os.path.join(root, libc)
         else:
-            for root, dirs, files in os.walk(os.path.join(dir_path, "data", "lib")):
+            for root, dirs, files in os.walk(os.path.join(dir_path)):
                 if libc in files:
                     libc_path = os.path.join(root, libc)
         print(f"libc path is {libc_path}")
