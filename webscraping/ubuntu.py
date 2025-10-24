@@ -1,16 +1,9 @@
-#==============WORK ON==================================
-# Filter results to only go back to 2020
-# Still need to look into depacking these and extracting our libc files
-
-#Make sure Beautiful Soup intalled in WSL terminal
-    #pip install beautifulsoup4 requests
-
-
 from bs4 import BeautifulSoup
 import requests
 import subprocess
 import re
 import os
+import shutil
 from datetime import datetime
 
 
@@ -181,5 +174,12 @@ for link in soup.find_all("a", href=True):
                 stderr=subprocess.STDOUT,
                 check=True,
                 text=True)
+
+#delete GlibcDownloads folder and contents
+try:
+    shutil.rmtree(download_dir)
+    print(f"Removed download directory: {download_dir}")
+except OSError as e:
+    print(f"Error removing {download_dir}: {e.strerror}")
 
 print(f"\nDone — {count} files downloaded to {download_dir}")
