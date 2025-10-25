@@ -1,16 +1,9 @@
-#==============WORK ON==================================
-# Filter results to only go back to 2020
-# Still need to look into depacking these and extracting our libc files
-
-#Make sure Beautiful Soup intalled in WSL terminal
-    #pip install beautifulsoup4 requests
-
-
 from bs4 import BeautifulSoup
 import requests
 import subprocess
 import re
 import os
+import shutil
 from datetime import datetime
 
 
@@ -127,10 +120,17 @@ for link in soup.find_all("a", href=True):
                 continue
 
     if match.match(name): # Found a match, download
-        file_path = os.path.join(download_dir, name)
-        if os.path.exists(file_path):
+        # Determine architecture from filename
+        arch = name.split("_")[-1].replace(".deb", "")
+        arch_dir = os.path.join(gadgets_dir, arch)
+        os.makedirs(arch_dir, exist_ok=True) #make subfolers for each arch
+
+        gadget_path = os.path.join(gadgets_dir, name[:-4] + ".txt") # check subfolders for existing file
+        if os.path.exists(gadget_path):
             print(f"Skipping (already exists): {name}")
             continue
+
+        file_path = os.path.join(download_dir, name)
         print(f"Downloading: {name}")
         link_download = requests.get(url_prefix + name, stream=True)
         with open(file_path, mode="wb") as file:
@@ -138,7 +138,7 @@ for link in soup.find_all("a", href=True):
                 file.write(chunk)
         count += 1
 
-         # Unpack using the full path
+        # Unpack using the full path
         subprocess.run(["debx", "unpack", file_path])
         dir_path = file_path[:-4]
 
@@ -148,7 +148,6 @@ for link in soup.find_all("a", href=True):
         data_tar_zst_path = os.path.join(dir_path, "data.tar.zst")
         data_tar_path = os.path.join(dir_path, "data.tar")
         data_path = os.path.join(dir_path, "data")
-
         libc = "libc.so.6"
 
         if os.path.isfile(data_tar_zst_path):
@@ -158,11 +157,16 @@ for link in soup.find_all("a", href=True):
                 if libc in files:
                     libc_path = os.path.join(root, libc)
         else:
-            for root, dirs, files in os.walk(os.path.join(dir_path)):
+            for root, dirs, files in os.walk(dir_path):
                 if libc in files:
                     libc_path = os.path.join(root, libc)
-        print(f"libc path is {libc_path}")
-        gadget_path = os.path.join(gadgets_dir, name[:-4] + ".txt")
+                    break
+        arch = name.split("_")[-1].replace(".deb", "")
+
+        # Make a subfolder for that architecture
+        arch_dir = os.path.join(gadgets_dir, arch)
+        os.makedirs(arch_dir, exist_ok=True)
+        gadget_path = os.path.join(arch_dir, name[:-4] + ".txt")
         with open(gadget_path, "w") as out:
             subprocess.run(
                 ["ropper", "--nocolor", "--file", libc_path],
@@ -170,5 +174,12 @@ for link in soup.find_all("a", href=True):
                 stderr=subprocess.STDOUT,
                 check=True,
                 text=True)
+
+#delete GlibcDownloads folder and contents
+try:
+    shutil.rmtree(download_dir)
+    print(f"Removed download directory: {download_dir}")
+except OSError as e:
+    print(f"Error removing {download_dir}: {e.strerror}")
 
 print(f"\nDone — {count} files downloaded to {download_dir}")
