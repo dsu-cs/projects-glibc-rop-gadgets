@@ -17,16 +17,15 @@ def extract_options_from_files():
         arch_path = os.path.join(GADGETS_DIR, arch)
         if not os.path.isdir(arch_path):
             continue
-    
-    architectures.add(arch)
+        architectures.add(arch)
 
     #Search local directory for files matching RegEx pattern
     #Note appropriate architectures and versions based on what is found
-    for filename in os.listdir(arch_path):
-        match = pattern.match(filename)
-        if match:
-            version = match.group(1)
-            versions.add(version)
+        for filename in os.listdir(arch_path):
+            match = pattern.match(filename)
+            if match:
+                version = match.group(1)
+                versions.add(version)
     
     #Return architectures and versions that were found in files in local directory
     return sorted(architectures), sorted(versions)
